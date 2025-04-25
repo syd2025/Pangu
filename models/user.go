@@ -186,3 +186,25 @@ func (m *UserModel) GetUserProfileByID(id int64) (*UserProfile, error) {
 
 	return &user, nil
 }
+
+func (m *UserModel) UpdateUserAvatar(id int64, avatar string) (string, error) {
+	query := `
+		WITH old_values AS (
+			SELECT avatar FROM appuser.users WHERE id = $1
+		)
+		UPDATE appuser.users
+		SET avatar = $2
+		WHERE id = $1
+		RETURNING (SELECT avatar FROM old_values)`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var oldAvatar sql.NullString
+	tx := m.DB.WithContext(ctx).Raw(query, id, avatar).Scan(&oldAvatar)
+	if tx.Error != nil {
+		return "", tx.Error
+	} else {
+		return oldAvatar.String, nil
+	}
+}

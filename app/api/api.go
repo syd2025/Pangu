@@ -52,7 +52,7 @@ func (api *Api) Routes() *echo.Echo {
 	})
 
 	// 注册路由
-	api.Login()
+	api.UserRoutes()
 
 	// 注册中间件
 	api.instance.Use(api.middleware.LogRequest)

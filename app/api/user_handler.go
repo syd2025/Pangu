@@ -1,7 +1,9 @@
 package api
 
 import (
+	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -84,6 +86,65 @@ func (api *Api) getUserAvatar(c echo.Context) error {
 	return nil
 }
 
+// uploadUserAvatar 上传用户头像接口
+func (api *Api) uploadUserAvatar(c echo.Context) error {
+	user := api.middleware.ContextGetUser(c)
+	err := c.Request().ParseMultipartForm(10 << 20)
+	if err != nil {
+		return api.helper.BadRequestResponse(c, err)
+	}
+	file, header, err := c.Request().FormFile("avatar")
+	if err != nil {
+		return api.helper.BadRequestResponse(c, err)
+	}
+	defer file.Close()
+
+	dstExt := filepath.Ext(header.Filename)
+	dstName := api.helper.RandomString(16) + dstExt
+	dstPath := filepath.Join(api.config.Path.AvatarsPath(), dstName)
+	dst, err := os.Create(dstPath)
+	if err != nil {
+		return api.helper.ServerErrorResponse(c, err)
+
+	}
+	defer dst.Close()
+
+	if _, err = io.Copy(dst, file); err != nil {
+		return api.helper.ServerErrorResponse(c, err)
+	}
+
+	old, err := api.models.Users.UpdateUserAvatar(user.ID, dstName)
+	if err != nil {
+		os.Remove(dstPath)
+		return api.helper.ServerErrorResponse(c, err)
+	}
+
+	if old != "" && old != "default_avatar.png" {
+		os.Remove(filepath.Join(api.config.Path.AvatarsPath(), old))
+	}
+
+	var output = struct {
+		ID     int64  `json:"id"`
+		Field  string `json:"field"`
+		Avatar string `json:"value"`
+	}{
+		ID:     user.ID,
+		Field:  "avatar",
+		Avatar: dstName,
+	}
+
+	data := map[string]interface{}{
+		"output": output,
+	}
+
+	resp := api.helper.NewResponse(0, data)
+	err = api.helper.WriteJSON(c.Response().Writer, http.StatusOK, resp, nil)
+	if err != nil {
+		return api.helper.ServerErrorResponse(c, err)
+	}
+	return nil
+}
+
 // getUserProfile 获取用户信息接口
 func (api *Api) getUserProfile(c echo.Context) error {
 	user := api.middleware.ContextGetUser(c)
@@ -104,6 +165,7 @@ func (api *Api) getUserProfile(c echo.Context) error {
 	return nil
 }
 
+// updateUserProfile 获取用户信息接口
 func (api *Api) getUserBrief(c echo.Context) error {
 	user := api.middleware.ContextGetUser(c)
 	brief, err := api.models.Users.GetUserBriefByAccountOrID("", user.ID)
@@ -124,6 +186,7 @@ func (api *Api) getUserBrief(c echo.Context) error {
 	return nil
 }
 
+// logout 用户登出接口
 func (api *Api) logout(c echo.Context) error {
 	authorizationHeader := c.Request().Header.Get("Authorization")
 	headerParts := strings.Split(authorizationHeader, " ")
