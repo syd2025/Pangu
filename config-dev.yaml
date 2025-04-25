@@ -1,0 +1,33 @@
+server: 0.0.0.0
+port: 10005
+videoport: 10006
+env: dev
+path:
+  cert: ../server-data/tls/cert-dev.pem
+  key: ../server-data/tls/key-dev.pem
+  avatars: ../server-data/avatars
+  courseimages: ../server-data/courseimages
+  lectures: ../server-data/lectures
+  html: ../server-data/html
+
+database:
+  host: 180.102.21.130
+  port: 10002
+  dbname: go
+  user: learning
+  passwd: learningGoFly
+  maxopenconns: 25
+  maxidleconns: 25
+  maxidletime: 15m
+
+limiter:
+  rps: 20
+  burst: 40
+  enabled: true
+
+smtp:
+  host: smtp.126.com
+  port: 25
+  username: learning2024@126.com
+  password: NPLLYUDCOWZJRVMH   #EE123987II#
+  sender: Learning <learning2024@126.com>
