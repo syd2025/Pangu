@@ -20,7 +20,7 @@ func (v *Validator) Valid() bool {
 }
 
 func (v *Validator) AddError(key, message string) {
-	if _, eixsts := v.Errors[key]; !eixsts {
+	if _, exists := v.Errors[key]; !exists {
 		v.Errors[key] = message
 	}
 }
